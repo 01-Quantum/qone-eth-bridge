@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QONE Bridge Deployer</title>
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-BsT9BMCc.js"></script>
+    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-HWstxqm8.css">
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>QONE Bridge Deployer</h1>
+        <p>Deploy OFT bridge contracts between HyperEVM and Ethereum</p>
+      </header>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Wallet</h2>
+        </div>
+        <button id="connect-btn">Connect MetaMask</button>
+        <div id="wallet-info" class="address"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Step 1 &mdash; QONEOFTAdapter</h2>
+          <span class="badge hyperevm">HyperEVM</span>
+        </div>
+        <p>Locks/unlocks QONE for cross-chain bridging. Big-block mode is toggled automatically.</p>
+        <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
+        <div id="adapter-log" class="log"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Step 2 &mdash; QONEOFT</h2>
+          <span class="badge ethereum">Ethereum</span>
+        </div>
+        <p>Mint/burn representation of QONE on Ethereum.</p>
+        <button id="deploy-oft-btn" disabled>Deploy on Ethereum</button>
+        <div id="oft-log" class="log"></div>
+      </section>
+
+      <section id="summary-section" class="card" style="display: none">
+        <div class="card-header">
+          <h2>Post-Deploy</h2>
+        </div>
+        <div id="summary-content"></div>
+      </section>
+    </div>
+
+  </body>
+</html>
