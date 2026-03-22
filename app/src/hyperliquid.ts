@@ -37,6 +37,10 @@ export async function setBlockSize(
 
   await ensureSigningChain();
 
+  // Re-request account access after chain switch — MetaMask on deployed
+  // origins doesn't always carry permissions across chain changes.
+  await eth.request({ method: "eth_requestAccounts" });
+
   const provider = new BrowserProvider(eth);
   const signer = await provider.getSigner();
 
