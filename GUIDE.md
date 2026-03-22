@@ -131,7 +131,43 @@ cast send $QONEOFT_ETH_ADDRESS \
 
 ---
 
-## Step 4: (Optional) Configure DVNs and Libraries
+## Step 4: Verify Contracts on Etherscan / Block Explorers
+
+Verifying contracts makes the source code public and lets users interact via Etherscan's UI.
+
+Set your API key (stored in `.env`):
+
+```bash
+source .env
+```
+
+### 4a. Verify QONEOFTAdapter on HyperEVM
+
+```bash
+forge verify-contract $ADAPTER_HYPEREVM_ADDRESS \
+    src/QONEOFTAdapter.sol:QONEOFTAdapter \
+    --rpc-url https://rpc.hyperliquid.xyz/evm \
+    --verifier etherscan \
+    --verifier-url https://api.hyperevmscan.io/api \
+    --etherscan-api-key $ETHERSCAN_API_KEY
+```
+
+> HyperEVM explorer: [hyperevmscan.io](https://hyperevmscan.io). You may need a separate API key from HyperEVMScan — if so, register at their site and add it to `.env`.
+
+### 4b. Verify QONEOFT on Ethereum
+
+```bash
+forge verify-contract $QONEOFT_ETH_ADDRESS \
+    src/QONEOFT.sol:QONEOFT \
+    --rpc-url $ETHEREUM_RPC_URL \
+    --etherscan-api-key $ETHERSCAN_API_KEY
+```
+
+Both contracts have zero constructor arguments (all values are hardcoded), so no `--constructor-args` flag is needed.
+
+---
+
+## Step 5: (Optional) Configure DVNs and Libraries
 
 LayerZero uses its default DVN/library config by default. For production you may want to customize:
 
@@ -141,7 +177,7 @@ LayerZero uses its default DVN/library config by default. For production you may
 
 ---
 
-## Step 5: Test a Bridge Transfer
+## Step 6: Test a Bridge Transfer
 
 ### HyperEVM → Ethereum
 
@@ -185,7 +221,7 @@ Same pattern on the QONEOFT contract with `dstEid = 30367`.
 
 ---
 
-## Step 6: Track Your Transaction
+## Step 7: Track Your Transaction
 
 Paste your source tx hash on [LayerZero Scan](https://layerzeroscan.com/) to track delivery.
 
