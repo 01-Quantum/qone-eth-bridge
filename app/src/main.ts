@@ -66,12 +66,32 @@ $("connect-btn").addEventListener("click", async () => {
 
 // ── Deploy QONEOFTAdapter on HyperEVM ────────────────────
 
+let bigBlocksManual = false;
+
+async function trySetBlockSize(big: boolean, logTarget: string): Promise<boolean> {
+  try {
+    await setBlockSize(big, connectedAddress);
+    return true;
+  } catch {
+    const size = big ? "big" : "small";
+    log(logTarget, `Wallet signing failed — run this in your terminal instead:`, "error");
+    log(logTarget, `npx @layerzerolabs/hyperliquid-composer set-block --size ${size} --network mainnet --private-key $PRIVATE_KEY`, "info");
+    bigBlocksManual = true;
+    return false;
+  }
+}
+
 btn("deploy-adapter-btn").addEventListener("click", async () => {
   btn("deploy-adapter-btn").disabled = true;
   try {
     log("adapter-log", "Switching to big blocks…");
-    await setBlockSize(true, connectedAddress);
-    log("adapter-log", "Big blocks enabled", "success");
+    if (await trySetBlockSize(true, "adapter-log")) {
+      log("adapter-log", "Big blocks enabled", "success");
+    } else {
+      log("adapter-log", "Run the command above, then click Deploy again.", "error");
+      btn("deploy-adapter-btn").disabled = false;
+      return;
+    }
 
     log("adapter-log", "Switching MetaMask to HyperEVM…");
     await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
@@ -90,15 +110,22 @@ btn("deploy-adapter-btn").addEventListener("click", async () => {
     adapterAddress = await contract.getAddress();
     log("adapter-log", `Deployed: ${adapterAddress}`, "success");
 
-    log("adapter-log", "Switching back to small blocks…");
-    await setBlockSize(false, connectedAddress);
-    log("adapter-log", "Small blocks restored", "success");
+    if (!bigBlocksManual) {
+      log("adapter-log", "Switching back to small blocks…");
+      await setBlockSize(false, connectedAddress);
+      log("adapter-log", "Small blocks restored", "success");
+    } else {
+      log("adapter-log", "Remember to switch back to small blocks:", "info");
+      log("adapter-log", "npx @layerzerolabs/hyperliquid-composer set-block --size small --network mainnet --private-key $PRIVATE_KEY", "info");
+    }
 
     updateSummary();
   } catch (err: any) {
     log("adapter-log", `Error: ${err.shortMessage || err.message || err}`, "error");
     btn("deploy-adapter-btn").disabled = false;
-    try { await setBlockSize(false, connectedAddress); } catch {}
+    if (!bigBlocksManual) {
+      try { await setBlockSize(false, connectedAddress); } catch {}
+    }
   }
 });
 

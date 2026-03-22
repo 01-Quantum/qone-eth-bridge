@@ -25,7 +25,7 @@ All addresses are baked into the contracts — no constructor arguments needed.
 
 | Item | Value |
 |------|-------|
-| Owner (ada) | `0xb2A1dc0DB510E268B645387e852061ce22E2e7aa` |
+| Owner | `0xb2A1dc0DB510E268B645387e852061ce22E2e7aa` |
 | QONE Token (HyperEVM) | `0x1E369922D78db967B009D4a21CC04c0881B698DB` |
 | LayerZero EndpointV2 (HyperEVM) | `0x3A73033C0b1407574C76BdBAc67f126f6b4a9AA9` |
 | LayerZero EndpointV2 (Ethereum) | `0x1a44076050125825900e736c501f859c50fE728c` |

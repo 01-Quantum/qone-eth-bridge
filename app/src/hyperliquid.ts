@@ -56,10 +56,20 @@ export async function setBlockSize(
     message: { source: "a", connectionId },
   };
 
-  const sig = (await eth.request({
-    method: "eth_signTypedData_v4",
-    params: [address, JSON.stringify(typedData)],
-  })) as string;
+  // v3 produces the same hash as v4 for flat structs but avoids
+  // MetaMask's chainId-must-match-active-network validation.
+  let sig: string;
+  try {
+    sig = (await eth.request({
+      method: "eth_signTypedData_v4",
+      params: [address, JSON.stringify(typedData)],
+    })) as string;
+  } catch {
+    sig = (await eth.request({
+      method: "eth_signTypedData_v3",
+      params: [address, JSON.stringify(typedData)],
+    })) as string;
+  }
 
   const r = `0x${sig.slice(2, 66)}`;
   const s = `0x${sig.slice(66, 130)}`;
