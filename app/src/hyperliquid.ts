@@ -1,79 +1,54 @@
-import { encode } from "@msgpack/msgpack";
-import { keccak256 } from "ethers";
+import { signL1Action } from "@nktkas/hyperliquid/signing";
+import { BrowserProvider } from "ethers";
 
 const HYPERLIQUID_API = "https://api.hyperliquid.xyz";
+const SIGNING_CHAIN_ID = "0x539"; // 1337 in hex
 
-function computeActionHash(
-  action: Record<string, unknown>,
-  nonce: number
-): string {
-  const packed = encode(action);
-
-  const nonceBuf = new Uint8Array(8);
-  new DataView(nonceBuf.buffer).setBigUint64(0, BigInt(nonce), false);
-
-  const vaultByte = new Uint8Array([0x00]);
-
-  const data = new Uint8Array(packed.length + 8 + 1);
-  data.set(packed, 0);
-  data.set(nonceBuf, packed.length);
-  data.set(vaultByte, packed.length + 8);
-
-  return keccak256(data);
+async function ensureSigningChain(): Promise<void> {
+  const eth = window.ethereum!;
+  try {
+    await eth.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: SIGNING_CHAIN_ID }],
+    });
+  } catch (err: any) {
+    if (err.code === 4902) {
+      await eth.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: SIGNING_CHAIN_ID,
+          chainName: "Hyperliquid Core Signing",
+          nativeCurrency: { name: "HYPE", symbol: "HYPE", decimals: 18 },
+          rpcUrls: ["https://api.hyperliquid.xyz/evm"],
+        }],
+      });
+    } else {
+      throw err;
+    }
+  }
 }
 
 export async function setBlockSize(
   big: boolean,
-  address: string
+  _address: string
 ): Promise<void> {
   const eth = window.ethereum;
   if (!eth) throw new Error("MetaMask not found");
 
+  await ensureSigningChain();
+
+  const provider = new BrowserProvider(eth);
+  const signer = await provider.getSigner();
+
   const action = { type: "evmUserModify", usingBigBlocks: big };
   const nonce = Date.now();
-  const connectionId = computeActionHash(action, nonce);
 
-  const typedData = {
-    types: {
-      EIP712Domain: [
-        { name: "name", type: "string" },
-        { name: "version", type: "string" },
-        { name: "chainId", type: "uint256" },
-        { name: "verifyingContract", type: "address" },
-      ],
-      Agent: [
-        { name: "source", type: "string" },
-        { name: "connectionId", type: "bytes32" },
-      ],
-    },
-    primaryType: "Agent",
-    domain: {
-      name: "Exchange",
-      version: "1",
-      chainId: 1337,
-      verifyingContract: "0x0000000000000000000000000000000000000000",
-    },
-    message: { source: "a", connectionId },
-  };
-
-  // v3 produces the same hash as v4 for flat structs but avoids
-  // MetaMask's chainId-must-match-active-network validation.
-  let sig: string;
-  try {
-    sig = (await eth.request({
-      method: "eth_signTypedData_v4",
-      params: [address, JSON.stringify(typedData)],
-    })) as string;
-  } catch {
-    sig = (await eth.request({
-      method: "eth_signTypedData_v3",
-      params: [address, JSON.stringify(typedData)],
-    })) as string;
-  }
-
-  const r = `0x${sig.slice(2, 66)}`;
-  const s = `0x${sig.slice(66, 130)}`;
-  const v = parseInt(sig.slice(130, 132), 16);
+  const signature = await signL1Action({
+    wallet: signer,
+    action,
+    nonce,
+    isTestnet: false,
+  });
 
   const res = await fetch(`${HYPERLIQUID_API}/exchange`, {
     method: "POST",
@@ -81,7 +56,7 @@ export async function setBlockSize(
     body: JSON.stringify({
       action,
       nonce,
-      signature: { r, s, v },
+      signature,
       vaultAddress: null,
     }),
   });
