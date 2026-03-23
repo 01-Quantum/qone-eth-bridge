@@ -6,21 +6,29 @@
   Ethereum                                        HyperEVM
 ┌──────────────────────┐                   ┌──────────────────────┐
 │  DummyAuthorizer     │                   │  QONE Token (ERC-20) │
-│  (PQC Phase 1)       │                   │  0x1E3699...B698DB   │
+│  0x332E...8024       │                   │  0x1E3699...B698DB   │
 │                      │                   │                      │
-│  QONE V2 (ERC-20)    │                   │  QONEOFTAdapter      │
-│  (fixed supply + PQC)│◄── LayerZero ──►  │  (lock/unlock)       │
+│  QONE V2 (ERC-20)   │                   │  QONEOFTAdapter      │
+│  0x2019...AcdE0      │◄── LayerZero ──►  │  (lock/unlock)       │
 └──────────────────────┘    Messaging      └──────────────────────┘
 ```
 
 **Contracts:**
-- **DummyAuthorizer** — Placeholder PQC authorizer that allows all transfers (Phase 1). Deployed on Ethereum before QONE V2.
-- **QONE V2** — Fixed-supply ERC-20 with PQC capability. Requires a deployed authorizer. Deployed on Ethereum.
-- **QONEOFTAdapter** — Locks/unlocks existing QONE tokens on HyperEVM for cross-chain bridging. Deployed on HyperEVM.
+- **DummyAuthorizer** — Placeholder PQC authorizer that allows all transfers (Phase 1). Deployed on Ethereum.
+- **QONE V2** — Fixed-supply ERC-20 with PQC capability. Deployed on Ethereum.
+- **QONEOFTAdapter** — Locks/unlocks existing QONE tokens on HyperEVM for cross-chain bridging.
 
 ---
 
-## Hardcoded Addresses (QONEOFTAdapter)
+## Deployed Addresses
+
+| Contract | Chain | Address | Status |
+|----------|-------|---------|--------|
+| DummyAuthorizer | Ethereum | `0x332E3F52594F54E2c4fcFD43958eD5368bCb8024` | Deployed & Verified |
+| QONE V2 | Ethereum | `0x20196F73529C7DC24B30f4703D7A2b79643aCdE0` | Deployed & Verified |
+| QONEOFTAdapter | HyperEVM | _not yet deployed_ | Pending |
+
+### Hardcoded in QONEOFTAdapter
 
 | Item | Value |
 |------|-------|
@@ -37,7 +45,7 @@
 
 1. **Foundry** installed (`forge`, `cast`)
 2. **Node.js** (v18+) and **npm**
-3. **MetaMask** browser extension with funded wallets on both HyperEVM and Ethereum
+3. **MetaMask** browser extension with funded wallet on HyperEVM
 4. **HyperEVM deployer account must be activated on HyperCore** (at least $1 in USDC or HYPE received on HyperCore)
 
 ---
@@ -50,9 +58,9 @@ forge build
 
 ---
 
-## Step 1: Deploy via the Web App
+## Step 1: Deploy QONEOFTAdapter via the Web App
 
-The `app/` directory contains a Vite + TypeScript deployer that uses MetaMask.
+DummyAuthorizer and QONE V2 are already deployed on Ethereum. The only remaining deployment is the QONEOFTAdapter on HyperEVM.
 
 ```bash
 cd app
@@ -63,11 +71,9 @@ npm run dev
 Open the URL shown in the terminal, then:
 
 1. **Connect MetaMask** — click the button to connect your wallet.
-2. **Deploy DummyAuthorizer** — deploys on Ethereum. Or paste an existing address.
-3. **Deploy QONE V2** — deploys on Ethereum using the authorizer from step 2. Or paste an existing address.
-4. **Deploy QONEOFTAdapter** — deploys on HyperEVM. Or paste an existing address.
+2. **Deploy QONEOFTAdapter** — the app switches MetaMask to HyperEVM and deploys.
 
-All deployed addresses are shown on screen after each deployment.
+The adapter address is shown on screen after deployment, along with the wiring commands for the next steps.
 
 > **Alternative (CLI):** If you prefer deploying from the command line, see the [CLI Deploy](#cli-deploy) section below.
 
@@ -75,27 +81,27 @@ All deployed addresses are shown on screen after each deployment.
 
 ## Step 2: Set Peers
 
-Each LayerZero contract must know its counterpart on the other chain.
+Each LayerZero contract must know its counterpart on the other chain. Replace `$ADAPTER_HYPEREVM_ADDRESS` with the address from Step 1.
 
-### 2a. On HyperEVM — point adapter to the Ethereum contract
+### 2a. On HyperEVM — point adapter to QONE V2 on Ethereum
 
 ```bash
 cast send $ADAPTER_HYPEREVM_ADDRESS \
     "setPeer(uint32,bytes32)" \
     30101 \
-    $(cast --to-bytes32 $ETH_COUNTERPART_ADDRESS) \
+    $(cast --to-bytes32 0x20196F73529C7DC24B30f4703D7A2b79643aCdE0) \
     --rpc-url https://rpc.hyperliquid.xyz/evm \
     --private-key $PRIVATE_KEY
 ```
 
-### 2b. On Ethereum — point counterpart to the HyperEVM adapter
+### 2b. On Ethereum — point QONE V2 to the HyperEVM adapter
 
 ```bash
-cast send $ETH_COUNTERPART_ADDRESS \
+cast send 0x20196F73529C7DC24B30f4703D7A2b79643aCdE0 \
     "setPeer(uint32,bytes32)" \
     30367 \
     $(cast --to-bytes32 $ADAPTER_HYPEREVM_ADDRESS) \
-    --rpc-url $ETHEREUM_RPC_URL \
+    --rpc-url https://cloudflare-eth.com \
     --private-key $PRIVATE_KEY
 ```
 
@@ -117,13 +123,13 @@ cast send $ADAPTER_HYPEREVM_ADDRESS \
     --private-key $PRIVATE_KEY
 ```
 
-### 3b. On Ethereum counterpart (messages → HyperEVM)
+### 3b. On Ethereum QONE V2 (messages → HyperEVM)
 
 ```bash
-cast send $ETH_COUNTERPART_ADDRESS \
+cast send 0x20196F73529C7DC24B30f4703D7A2b79643aCdE0 \
     "setEnforcedOptions((uint32,uint16,bytes)[])" \
     "[(30367,1,0x00030100110100000000000000000000000000013880)]" \
-    --rpc-url $ETHEREUM_RPC_URL \
+    --rpc-url https://cloudflare-eth.com \
     --private-key $PRIVATE_KEY
 ```
 
@@ -131,39 +137,13 @@ cast send $ETH_COUNTERPART_ADDRESS \
 
 ---
 
-## Step 4: Verify Contracts on Block Explorers
+## Step 4: Verify QONEOFTAdapter on HyperEVM
 
-Verifying contracts makes the source code public and lets users interact via the explorer UI.
-
-Set your API key (stored in `.env`):
+DummyAuthorizer and QONE V2 are already verified on Etherscan.
 
 ```bash
 source .env
-```
 
-### 4a. Verify DummyAuthorizer on Ethereum
-
-```bash
-forge verify-contract $DUMMY_AUTHORIZER_ADDRESS \
-    src/DummyAuthorizer.sol:DummyAuthorizer \
-    --rpc-url $ETHEREUM_RPC_URL \
-    --etherscan-api-key $ETHERSCAN_API_KEY \
-    --constructor-args $(cast abi-encode "constructor(address)" $OWNER_ADDRESS)
-```
-
-### 4b. Verify QONE V2 on Ethereum
-
-```bash
-forge verify-contract $QONE_V2_ADDRESS \
-    "src/QONE-V2.sol:QONE" \
-    --rpc-url $ETHEREUM_RPC_URL \
-    --etherscan-api-key $ETHERSCAN_API_KEY \
-    --constructor-args $(cast abi-encode "constructor(address,address)" $OWNER_ADDRESS $DUMMY_AUTHORIZER_ADDRESS)
-```
-
-### 4c. Verify QONEOFTAdapter on HyperEVM
-
-```bash
 forge verify-contract $ADAPTER_HYPEREVM_ADDRESS \
     src/QONEOFTAdapter.sol:QONEOFTAdapter \
     --rpc-url https://rpc.hyperliquid.xyz/evm \
@@ -226,7 +206,7 @@ cast send $ADAPTER_HYPEREVM_ADDRESS \
 
 ### Ethereum → HyperEVM
 
-Same pattern on the Ethereum counterpart contract with `dstEid = 30367`.
+Same pattern on the QONE V2 contract (`0x20196F73529C7DC24B30f4703D7A2b79643aCdE0`) with `dstEid = 30367`.
 
 ---
 
@@ -240,29 +220,7 @@ Paste your source tx hash on [LayerZero Scan](https://layerzeroscan.com/) to tra
 
 If you prefer deploying without the web app:
 
-### 1. Deploy DummyAuthorizer on Ethereum
-
-```bash
-BYTECODE=$(jq -r '.bytecode.object' out/DummyAuthorizer.sol/DummyAuthorizer.json)
-ARGS=$(cast abi-encode "constructor(address)" $OWNER_ADDRESS)
-
-cast send --rpc-url $ETHEREUM_RPC_URL \
-    --private-key $PRIVATE_KEY \
-    --create "${BYTECODE}${ARGS:2}"
-```
-
-### 2. Deploy QONE V2 on Ethereum
-
-```bash
-BYTECODE=$(jq -r '.bytecode.object' out/QONE-V2.sol/QONE.json)
-ARGS=$(cast abi-encode "constructor(address,address)" $OWNER_ADDRESS $DUMMY_AUTHORIZER_ADDRESS)
-
-cast send --rpc-url $ETHEREUM_RPC_URL \
-    --private-key $PRIVATE_KEY \
-    --create "${BYTECODE}${ARGS:2}"
-```
-
-### 3. Switch to big blocks (HyperEVM)
+### 1. Switch to big blocks (HyperEVM)
 
 ```bash
 npx @layerzerolabs/hyperliquid-composer set-block \
@@ -270,7 +228,7 @@ npx @layerzerolabs/hyperliquid-composer set-block \
     --private-key $PRIVATE_KEY
 ```
 
-### 4. Deploy QONEOFTAdapter on HyperEVM
+### 2. Deploy QONEOFTAdapter on HyperEVM
 
 ```bash
 BYTECODE=$(jq -r '.bytecode.object' out/QONEOFTAdapter.sol/QONEOFTAdapter.json)
@@ -280,7 +238,7 @@ cast send --rpc-url https://rpc.hyperliquid.xyz/evm \
     --create "$BYTECODE"
 ```
 
-### 5. Switch back to small blocks
+### 3. Switch back to small blocks
 
 ```bash
 npx @layerzerolabs/hyperliquid-composer set-block \
@@ -302,10 +260,11 @@ Once the bridge is live:
 
 ## Security Checklist
 
+- [ ] QONEOFTAdapter deployed on HyperEVM
 - [ ] `setPeer` called on **both** contracts (bidirectional)
 - [ ] Enforced options set on **both** contracts
+- [ ] QONEOFTAdapter verified on [hyperevmscan.io](https://hyperevmscan.io)
 - [ ] Test with a small amount first
 - [ ] Verify delivery on [LayerZero Scan](https://layerzeroscan.com/)
 - [ ] Only ONE OFTAdapter exists globally (multiple adapters break unified liquidity)
 - [ ] Owner keys are secured (owner can reconfigure peers and options)
-- [ ] DummyAuthorizer owner matches QONE V2 owner

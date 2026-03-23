@@ -54,6 +54,14 @@ header p {
   margin-bottom: 1rem;
 }
 
+.card.done {
+  opacity: 0.65;
+}
+
+.card.done .addr-row {
+  margin-top: 0;
+}
+
 .card-header {
   display: flex;
   align-items: center;

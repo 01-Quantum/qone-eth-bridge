@@ -20,34 +20,26 @@
         <div id="wallet-info" class="address"></div>
       </section>
 
-      <section class="card">
+      <section class="card done">
         <div class="card-header">
           <h2>Step 1 &mdash; DummyAuthorizer</h2>
-          <span class="badge ethereum">Ethereum</span>
+          <span class="badge ethereum">Ethereum &check;</span>
         </div>
-        <p>Placeholder PQC authorizer that allows all transfers (Phase 1).</p>
-        <div class="deploy-row">
-          <button id="deploy-auth-btn" disabled>Deploy on Ethereum</button>
-          <span class="or-label">or</span>
-          <input id="auth-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-auth-btn" class="use-btn" disabled>Use</button>
+        <div class="addr-row">
+          <label>Deployed &amp; Verified</label>
+          <code>0x332E3F52594F54E2c4fcFD43958eD5368bCb8024</code>
         </div>
-        <div id="auth-log" class="log"></div>
       </section>
 
-      <section class="card">
+      <section class="card done">
         <div class="card-header">
           <h2>Step 2 &mdash; QONE V2</h2>
-          <span class="badge ethereum">Ethereum</span>
+          <span class="badge ethereum">Ethereum &check;</span>
         </div>
-        <p>Fixed-supply ERC-20 with PQC capability. Requires DummyAuthorizer from Step 1.</p>
-        <div class="deploy-row">
-          <button id="deploy-qone-btn" disabled>Deploy on Ethereum</button>
-          <span class="or-label">or</span>
-          <input id="qone-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-qone-btn" class="use-btn" disabled>Use</button>
+        <div class="addr-row">
+          <label>Deployed &amp; Verified</label>
+          <code>0x20196F73529C7DC24B30f4703D7A2b79643aCdE0</code>
         </div>
-        <div id="qone-log" class="log"></div>
       </section>
 
       <section class="card">
@@ -56,12 +48,7 @@
           <span class="badge hyperevm">HyperEVM</span>
         </div>
         <p>Locks/unlocks QONE for cross-chain bridging on HyperEVM.</p>
-        <div class="deploy-row">
-          <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
-          <span class="or-label">or</span>
-          <input id="adapter-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-adapter-btn" class="use-btn" disabled>Use</button>
-        </div>
+        <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
         <div id="adapter-log" class="log"></div>
       </section>
 
