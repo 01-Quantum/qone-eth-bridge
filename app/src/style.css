@@ -104,6 +104,57 @@ button {
   width: 100%;
 }
 
+.deploy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deploy-row button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.deploy-row .or-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.addr-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.addr-input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.addr-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.use-btn {
+  flex: 0 0 auto;
+  width: auto !important;
+  padding: 0.6rem 1rem;
+  background: var(--border);
+  font-size: 0.8rem;
+}
+
+.use-btn:hover:not(:disabled) {
+  background: #2a2a40;
+}
+
 button:hover:not(:disabled) {
   background: var(--accent-hover);
 }
