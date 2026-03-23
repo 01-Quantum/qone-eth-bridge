@@ -1,7 +1,7 @@
 import { signL1Action } from "@nktkas/hyperliquid/signing";
 import { BrowserProvider } from "ethers";
 
-const HYPERLIQUID_API = "https://api.hyperliquid.xyz";
+const HYPERLIQUID_API = "https://lingering-flashy-log.hype-mainnet.quiknode.pro/f5f2f12bd0e79927a7601ae5437da756e518123b/hypercore";
 const SIGNING_CHAIN_ID = "0x539"; // 1337 in hex
 
 async function ensureSigningChain(): Promise<void> {
@@ -19,7 +19,7 @@ async function ensureSigningChain(): Promise<void> {
           chainId: SIGNING_CHAIN_ID,
           chainName: "Hyperliquid Core Signing",
           nativeCurrency: { name: "HYPE", symbol: "HYPE", decimals: 18 },
-          rpcUrls: ["https://api.hyperliquid.xyz/evm"],
+          rpcUrls: ["https://lingering-flashy-log.hype-mainnet.quiknode.pro/f5f2f12bd0e79927a7601ae5437da756e518123b/evm"],
         }],
       });
     } else {

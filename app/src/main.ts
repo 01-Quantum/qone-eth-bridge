@@ -3,7 +3,7 @@ import { setBlockSize } from "./hyperliquid";
 import adapterArtifact from "@artifacts/QONEOFTAdapter.sol/QONEOFTAdapter.json";
 import "./style.css";
 
-const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
+const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://lingering-flashy-log.hype-mainnet.quiknode.pro/f5f2f12bd0e79927a7601ae5437da756e518123b/evm" };
 const ETHEREUM = { id: 1, hex: "0x1" };
 const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
@@ -83,13 +83,20 @@ btn("deploy-adapter-btn").addEventListener("click", async () => {
     // Deploy
     L("Switching MetaMask to HyperEVM…");
     await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    await window.ethereum!.request({ method: "eth_requestAccounts" });
+
+    // Verify we're on the right chain
+    const chainId = await window.ethereum!.request({ method: "eth_chainId" });
+    if (chainId !== HYPEREVM.hex) {
+      throw new Error(`Expected chain ${HYPEREVM.hex} but got ${chainId}. Please switch MetaMask to HyperEVM manually.`);
+    }
     L("Connected to HyperEVM", "success");
 
     L("Deploying QONEOFTAdapter…");
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
     const factory = new ContractFactory(adapterArtifact.abi, adapterArtifact.bytecode.object, signer);
-    const contract = await factory.deploy();
+    const contract = await factory.deploy({ gasLimit: 15_000_000 });
     const txHash = contract.deploymentTransaction()?.hash;
     if (txHash) L(`Tx: ${txHash}`);
 
