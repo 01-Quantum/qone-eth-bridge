@@ -1,20 +1,22 @@
-import { BrowserProvider, ContractFactory } from "ethers";
+import { BrowserProvider, ContractFactory, Contract, zeroPadValue } from "ethers";
+import { setBlockSize } from "./hyperliquid";
 import adapterArtifact from "@artifacts/QONEOFTAdapter.sol/QONEOFTAdapter.json";
 import "./style.css";
 
 const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
+const ETHEREUM = { id: 1, hex: "0x1" };
 const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
-const AUTH_ADDRESS = "0x332E3F52594F54E2c4fcFD43958eD5368bCb8024";
 const QONE_ADDRESS = "0x20196F73529C7DC24B30f4703D7A2b79643aCdE0";
+const ENFORCED_OPTS_80K = "0x00030100110100000000000000000000000000013880";
 
 let adapterAddress = "";
 
 const $ = (id: string) => document.getElementById(id)!;
 const btn = (id: string) => $(id) as HTMLButtonElement;
 
-function log(msg: string, type: "info" | "success" | "error" = "info") {
-  const el = $("adapter-log");
+function log(target: string, msg: string, type: "info" | "success" | "error" = "info") {
+  const el = $(target);
   const line = document.createElement("div");
   line.className = `log-line ${type}`;
   line.textContent = msg;
@@ -45,6 +47,11 @@ async function ensureChain(chainHex: string, add?: { name: string; rpc: string }
   }
 }
 
+const OApp_ABI = [
+  "function setPeer(uint32 _eid, bytes32 _peer) external",
+  "function setEnforcedOptions((uint32 eid, uint16 msgType, bytes options)[] _enforcedOptions) external",
+];
+
 // ── Connect ──────────────────────────────────────────────
 
 $("connect-btn").addEventListener("click", async () => {
@@ -61,32 +68,154 @@ $("connect-btn").addEventListener("click", async () => {
   btn("deploy-adapter-btn").disabled = false;
 });
 
-// ── Deploy QONEOFTAdapter on HyperEVM ────────────────────
+// ── Step 3: Deploy QONEOFTAdapter on HyperEVM ────────────
 
 btn("deploy-adapter-btn").addEventListener("click", async () => {
   btn("deploy-adapter-btn").disabled = true;
-  try {
-    log("Switching MetaMask to HyperEVM…");
-    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
-    log("Connected to HyperEVM", "success");
+  const L = (m: string, t?: "info" | "success" | "error") => log("adapter-log", m, t);
 
-    log("Deploying QONEOFTAdapter…");
+  try {
+    // Big blocks ON
+    L("Switching to big blocks…");
+    await setBlockSize(true);
+    L("Big blocks enabled", "success");
+
+    // Deploy
+    L("Switching MetaMask to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    L("Connected to HyperEVM", "success");
+
+    L("Deploying QONEOFTAdapter…");
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
     const factory = new ContractFactory(adapterArtifact.abi, adapterArtifact.bytecode.object, signer);
     const contract = await factory.deploy();
     const txHash = contract.deploymentTransaction()?.hash;
-    if (txHash) log(`Tx: ${txHash}`);
+    if (txHash) L(`Tx: ${txHash}`);
 
-    log("Waiting for confirmation…");
+    L("Waiting for confirmation…");
     await contract.waitForDeployment();
     adapterAddress = await contract.getAddress();
-    log(`Deployed: ${adapterAddress}`, "success");
+    L(`Deployed: ${adapterAddress}`, "success");
 
+    // Big blocks OFF
+    L("Switching back to small blocks…");
+    try {
+      await setBlockSize(false);
+      L("Small blocks restored", "success");
+    } catch {
+      L("Could not auto-restore small blocks — do it manually if needed", "error");
+    }
+
+    showWiring();
     showSummary();
   } catch (err: any) {
-    log(`Error: ${err.shortMessage || err.message || err}`, "error");
+    L(`Error: ${err.shortMessage || err.message || err}`, "error");
     btn("deploy-adapter-btn").disabled = false;
+    // Try to restore small blocks on failure
+    try { await setBlockSize(false); } catch {}
+  }
+});
+
+// ── Step 4: Wire contracts ───────────────────────────────
+
+function showWiring() {
+  $("wiring-section").style.display = "block";
+  btn("peer-adapter-btn").disabled = false;
+  btn("peer-qone-btn").disabled = false;
+  btn("opts-adapter-btn").disabled = false;
+  btn("opts-qone-btn").disabled = false;
+}
+
+const W = (m: string, t?: "info" | "success" | "error") => log("wire-log", m, t);
+
+// setPeer on Adapter (HyperEVM → points to QONE V2 on Ethereum)
+btn("peer-adapter-btn").addEventListener("click", async () => {
+  btn("peer-adapter-btn").disabled = true;
+  try {
+    W("Switching to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const contract = new Contract(adapterAddress, OApp_ABI, signer);
+
+    const peerBytes32 = zeroPadValue(QONE_ADDRESS, 32);
+    W(`setPeer(${EID.ETHEREUM}, ${peerBytes32})…`);
+    const tx = await contract.setPeer(EID.ETHEREUM, peerBytes32);
+    W(`Tx: ${tx.hash}`);
+    await tx.wait();
+    W("Adapter peer set", "success");
+  } catch (err: any) {
+    W(`Error: ${err.shortMessage || err.message || err}`, "error");
+    btn("peer-adapter-btn").disabled = false;
+  }
+});
+
+// setPeer on QONE V2 (Ethereum → points to Adapter on HyperEVM)
+btn("peer-qone-btn").addEventListener("click", async () => {
+  btn("peer-qone-btn").disabled = true;
+  try {
+    W("Switching to Ethereum…");
+    await ensureChain(ETHEREUM.hex);
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const contract = new Contract(QONE_ADDRESS, OApp_ABI, signer);
+
+    const peerBytes32 = zeroPadValue(adapterAddress, 32);
+    W(`setPeer(${EID.HYPEREVM}, ${peerBytes32})…`);
+    const tx = await contract.setPeer(EID.HYPEREVM, peerBytes32);
+    W(`Tx: ${tx.hash}`);
+    await tx.wait();
+    W("QONE V2 peer set", "success");
+  } catch (err: any) {
+    W(`Error: ${err.shortMessage || err.message || err}`, "error");
+    btn("peer-qone-btn").disabled = false;
+  }
+});
+
+// setEnforcedOptions on Adapter (HyperEVM, for messages → Ethereum)
+btn("opts-adapter-btn").addEventListener("click", async () => {
+  btn("opts-adapter-btn").disabled = true;
+  try {
+    W("Switching to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const contract = new Contract(adapterAddress, OApp_ABI, signer);
+
+    W("setEnforcedOptions on adapter…");
+    const tx = await contract.setEnforcedOptions([
+      [EID.ETHEREUM, 1, ENFORCED_OPTS_80K],
+    ]);
+    W(`Tx: ${tx.hash}`);
+    await tx.wait();
+    W("Adapter enforced options set", "success");
+  } catch (err: any) {
+    W(`Error: ${err.shortMessage || err.message || err}`, "error");
+    btn("opts-adapter-btn").disabled = false;
+  }
+});
+
+// setEnforcedOptions on QONE V2 (Ethereum, for messages → HyperEVM)
+btn("opts-qone-btn").addEventListener("click", async () => {
+  btn("opts-qone-btn").disabled = true;
+  try {
+    W("Switching to Ethereum…");
+    await ensureChain(ETHEREUM.hex);
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const contract = new Contract(QONE_ADDRESS, OApp_ABI, signer);
+
+    W("setEnforcedOptions on QONE V2…");
+    const tx = await contract.setEnforcedOptions([
+      [EID.HYPEREVM, 1, ENFORCED_OPTS_80K],
+    ]);
+    W(`Tx: ${tx.hash}`);
+    await tx.wait();
+    W("QONE V2 enforced options set", "success");
+  } catch (err: any) {
+    W(`Error: ${err.shortMessage || err.message || err}`, "error");
+    btn("opts-qone-btn").disabled = false;
   }
 });
 
@@ -94,34 +223,9 @@ btn("deploy-adapter-btn").addEventListener("click", async () => {
 
 function showSummary() {
   $("summary-section").style.display = "block";
-
   let html = "";
-  html += `<div class="addr-row"><label>DummyAuthorizer (Ethereum)</label><code>${AUTH_ADDRESS}</code></div>`;
+  html += `<div class="addr-row"><label>DummyAuthorizer (Ethereum)</label><code>0x332E3F52594F54E2c4fcFD43958eD5368bCb8024</code></div>`;
   html += `<div class="addr-row"><label>QONE V2 (Ethereum)</label><code>${QONE_ADDRESS}</code></div>`;
   html += `<div class="addr-row"><label>QONEOFTAdapter (HyperEVM)</label><code>${adapterAddress}</code></div>`;
-
-  html += `<h3>Wire the contracts</h3>`;
-  html += `<p style="color:var(--muted);font-size:0.9rem;margin-bottom:0.75rem">Run these <code>cast</code> commands to finish setup:</p>`;
-  html += `<pre>`;
-  html += `# Set peers\n`;
-  html += `cast send ${adapterAddress} \\\n`;
-  html += `  "setPeer(uint32,bytes32)" ${EID.ETHEREUM} \\\n`;
-  html += `  $(cast --to-bytes32 ${QONE_ADDRESS}) \\\n`;
-  html += `  --rpc-url ${HYPEREVM.rpc} --private-key $PRIVATE_KEY\n\n`;
-  html += `cast send ${QONE_ADDRESS} \\\n`;
-  html += `  "setPeer(uint32,bytes32)" ${EID.HYPEREVM} \\\n`;
-  html += `  $(cast --to-bytes32 ${adapterAddress}) \\\n`;
-  html += `  --rpc-url $ETHEREUM_RPC_URL --private-key $PRIVATE_KEY\n\n`;
-  html += `# Set enforced options\n`;
-  html += `cast send ${adapterAddress} \\\n`;
-  html += `  "setEnforcedOptions((uint32,uint16,bytes)[])" \\\n`;
-  html += `  "[(${EID.ETHEREUM},1,0x00030100110100000000000000000000000000013880)]" \\\n`;
-  html += `  --rpc-url ${HYPEREVM.rpc} --private-key $PRIVATE_KEY\n\n`;
-  html += `cast send ${QONE_ADDRESS} \\\n`;
-  html += `  "setEnforcedOptions((uint32,uint16,bytes)[])" \\\n`;
-  html += `  "[(${EID.HYPEREVM},1,0x00030100110100000000000000000000000000013880)]" \\\n`;
-  html += `  --rpc-url $ETHEREUM_RPC_URL --private-key $PRIVATE_KEY`;
-  html += `</pre>`;
-
   $("summary-content").innerHTML = html;
 }

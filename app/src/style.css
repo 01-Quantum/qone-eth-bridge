@@ -245,3 +245,19 @@ button:disabled {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+.wire-group {
+  margin-bottom: 1rem;
+}
+
+.wire-group h3 {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wire-group button {
+  margin-bottom: 0.4rem;
+}
