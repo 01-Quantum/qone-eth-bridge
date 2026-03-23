@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-DRuDdcDi.js"></script>
-    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-3c2jBytM.css">
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-fF_cNt23.js"></script>
+    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-B2bSoPZd.css">
   </head>
   <body>
     <div id="app">
@@ -22,34 +22,26 @@
         <div id="wallet-info" class="address"></div>
       </section>
 
-      <section class="card">
+      <section class="card done">
         <div class="card-header">
           <h2>Step 1 &mdash; DummyAuthorizer</h2>
-          <span class="badge ethereum">Ethereum</span>
+          <span class="badge ethereum">Ethereum &check;</span>
         </div>
-        <p>Placeholder PQC authorizer that allows all transfers (Phase 1).</p>
-        <div class="deploy-row">
-          <button id="deploy-auth-btn" disabled>Deploy on Ethereum</button>
-          <span class="or-label">or</span>
-          <input id="auth-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-auth-btn" class="use-btn" disabled>Use</button>
+        <div class="addr-row">
+          <label>Deployed &amp; Verified</label>
+          <code>0x332E3F52594F54E2c4fcFD43958eD5368bCb8024</code>
         </div>
-        <div id="auth-log" class="log"></div>
       </section>
 
-      <section class="card">
+      <section class="card done">
         <div class="card-header">
           <h2>Step 2 &mdash; QONE V2</h2>
-          <span class="badge ethereum">Ethereum</span>
+          <span class="badge ethereum">Ethereum &check;</span>
         </div>
-        <p>Fixed-supply ERC-20 with PQC capability. Requires DummyAuthorizer from Step 1.</p>
-        <div class="deploy-row">
-          <button id="deploy-qone-btn" disabled>Deploy on Ethereum</button>
-          <span class="or-label">or</span>
-          <input id="qone-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-qone-btn" class="use-btn" disabled>Use</button>
+        <div class="addr-row">
+          <label>Deployed &amp; Verified</label>
+          <code>0x20196F73529C7DC24B30f4703D7A2b79643aCdE0</code>
         </div>
-        <div id="qone-log" class="log"></div>
       </section>
 
       <section class="card">
@@ -57,19 +49,35 @@
           <h2>Step 3 &mdash; QONEOFTAdapter</h2>
           <span class="badge hyperevm">HyperEVM</span>
         </div>
-        <p>Locks/unlocks QONE for cross-chain bridging on HyperEVM.</p>
-        <div class="deploy-row">
-          <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
-          <span class="or-label">or</span>
-          <input id="adapter-addr" type="text" placeholder="Paste existing address" class="addr-input" />
-          <button id="use-adapter-btn" class="use-btn" disabled>Use</button>
-        </div>
+        <p>Locks/unlocks QONE for cross-chain bridging. Automatically toggles big blocks.</p>
+        <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
         <div id="adapter-log" class="log"></div>
+      </section>
+
+      <section id="wiring-section" class="card" style="display: none">
+        <div class="card-header">
+          <h2>Step 4 &mdash; Wire Contracts</h2>
+        </div>
+        <p>Set peers and enforced options so the contracts can talk across chains. Each button sends one transaction via MetaMask.</p>
+
+        <div class="wire-group">
+          <h3>Set Peers</h3>
+          <button id="peer-adapter-btn" disabled>setPeer on Adapter (HyperEVM)</button>
+          <button id="peer-qone-btn" disabled>setPeer on QONE V2 (Ethereum)</button>
+        </div>
+
+        <div class="wire-group">
+          <h3>Set Enforced Options</h3>
+          <button id="opts-adapter-btn" disabled>setEnforcedOptions on Adapter (HyperEVM)</button>
+          <button id="opts-qone-btn" disabled>setEnforcedOptions on QONE V2 (Ethereum)</button>
+        </div>
+
+        <div id="wire-log" class="log"></div>
       </section>
 
       <section id="summary-section" class="card" style="display: none">
         <div class="card-header">
-          <h2>Post-Deploy</h2>
+          <h2>Deployed Addresses</h2>
         </div>
         <div id="summary-content"></div>
       </section>
