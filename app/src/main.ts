@@ -3,7 +3,7 @@ import { setBlockSize } from "./hyperliquid";
 import adapterArtifact from "@artifacts/QONEOFTAdapter.sol/QONEOFTAdapter.json";
 import "./style.css";
 
-const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://lingering-flashy-log.hype-mainnet.quiknode.pro/f5f2f12bd0e79927a7601ae5437da756e518123b/evm" };
+const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
 const ETHEREUM = { id: 1, hex: "0x1" };
 const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
