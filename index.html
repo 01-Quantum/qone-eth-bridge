@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-nglx4OM2.js"></script>
-    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-CMLvSf7P.css">
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-7PF0HGVL.js"></script>
+    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-B37ZBnQC.css">
   </head>
   <body>
     <div id="app">
@@ -49,7 +49,11 @@
           <h2>Step 3 &mdash; QONEOFTAdapter</h2>
           <span class="badge hyperevm">HyperEVM</span>
         </div>
-        <p>Locks/unlocks QONE for cross-chain bridging. Automatically toggles big blocks.</p>
+        <p>Locks/unlocks QONE for cross-chain bridging.</p>
+        <label class="checkbox-row">
+          <input type="checkbox" id="bigblock-toggle" checked />
+          <span>Auto-toggle big blocks (uncheck to skip &amp; handle manually)</span>
+        </label>
         <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
         <div id="adapter-log" class="log"></div>
       </section>
