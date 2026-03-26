@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-7PF0HGVL.js"></script>
-    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-B37ZBnQC.css">
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-Dhi-pauR.js"></script>
+    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-DXZhKZwO.css">
   </head>
   <body>
     <div id="app">
@@ -18,7 +18,10 @@
         <div class="card-header">
           <h2>Wallet</h2>
         </div>
-        <button id="connect-btn">Connect MetaMask</button>
+        <div id="wallet-buttons" class="wallet-buttons">
+          <button id="connect-rabby-btn">Connect Rabby</button>
+          <button id="connect-metamask-btn">Connect MetaMask</button>
+        </div>
         <div id="wallet-info" class="address"></div>
       </section>
 
@@ -62,7 +65,7 @@
         <div class="card-header">
           <h2>Step 4 &mdash; Wire Contracts</h2>
         </div>
-        <p>Set peers and enforced options so the contracts can talk across chains. Each button sends one transaction via MetaMask.</p>
+        <p>Set peers and enforced options so the contracts can talk across chains. Each button sends one transaction via your wallet.</p>
 
         <div class="wire-group">
           <h3>Set Peers</h3>
