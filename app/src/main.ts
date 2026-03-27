@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, zeroPadValue } from "ethers";
+import { BrowserProvider, Contract, zeroPadValue, parseUnits, formatUnits, formatEther } from "ethers";
 import { setBlockSize } from "./hyperliquid";
 import "./style.css";
 
@@ -8,6 +8,7 @@ const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
 const ADAPTER_HYPEREVM = "0x070DA2E023FD454fEC26Dcecb2b9B16668781a33";
 const ADAPTER_ETHEREUM = "0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721";
+const QONE_HYPEREVM = "0x1E369922D78db967B009D4a21CC04c0881B698DB";
 const ENFORCED_OPTS_80K = "0x00030100110100000000000000000000000000013880";
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -70,6 +71,10 @@ $("connect-btn").addEventListener("click", async () => {
   btn("peer-eth-adapter-btn").disabled = false;
   btn("opts-adapter-btn").disabled = false;
   btn("opts-eth-adapter-btn").disabled = false;
+  ($("bridge-amount") as HTMLInputElement).disabled = false;
+  btn("bridge-approve-btn").disabled = false;
+  btn("bridge-quote-btn").disabled = false;
+  btn("bridge-send-btn").disabled = false;
 });
 
 // ── Big Blocks ───────────────────────────────────────────
@@ -193,5 +198,131 @@ btn("opts-eth-adapter-btn").addEventListener("click", async () => {
   } catch (err: any) {
     W(`Error: ${err.shortMessage || err.message || err}`, "error");
     btn("opts-eth-adapter-btn").disabled = false;
+  }
+});
+
+// ── Test Bridge: HyperEVM → Ethereum ─────────────────────
+
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+];
+
+const ADAPTER_SEND_ABI = [
+  "function quoteSend((uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd) _sendParam, bool _payInLzToken) view returns ((uint256 nativeFee, uint256 lzTokenFee) msgFee)",
+  "function send((uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd) _sendParam, (uint256 nativeFee, uint256 lzTokenFee) _fee, address _refundAddress) payable returns ((bytes32 guid, uint64 nonce, uint256 amountSentLD, uint256 amountReceivedLD) receipt, (uint256 nativeFee, uint256 lzTokenFee) msgFee)",
+];
+
+let quotedNativeFee: bigint | null = null;
+
+const B = (m: string, t?: "info" | "success" | "error") => log("bridge-log", m, t);
+
+function getBridgeAmount(): { coins: string; wei: bigint; min: bigint } | null {
+  const coins = ($("bridge-amount") as HTMLInputElement).value;
+  if (!coins || Number(coins) <= 0) { B("Enter a valid amount", "error"); return null; }
+  const wei = parseUnits(coins, 18);
+  const min = wei * 95n / 100n;
+  return { coins, wei, min };
+}
+
+// Step 1: Approve
+btn("bridge-approve-btn").addEventListener("click", async () => {
+  const a = getBridgeAmount();
+  if (!a) return;
+  btn("bridge-approve-btn").disabled = true;
+  try {
+    B("Switching to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const from = await signer.getAddress();
+
+    console.log("[BRIDGE-APPROVE] signer:", from);
+    console.log("[BRIDGE-APPROVE] token:", QONE_HYPEREVM);
+    console.log("[BRIDGE-APPROVE] spender:", ADAPTER_HYPEREVM);
+    console.log("[BRIDGE-APPROVE] amount (coins):", a.coins);
+    console.log("[BRIDGE-APPROVE] amount (wei):", a.wei.toString());
+
+    const token = new Contract(QONE_HYPEREVM, ERC20_ABI, signer);
+    B(`Approving ${a.coins} QONE to adapter…`);
+    const tx = await token.approve(ADAPTER_HYPEREVM, a.wei);
+    console.log("[BRIDGE-APPROVE] tx:", tx.hash);
+    B(`Tx: ${tx.hash}`);
+    await tx.wait();
+    B("Approved ✓", "success");
+  } catch (err: any) {
+    console.error("[BRIDGE-APPROVE] error:", err);
+    B(`Error: ${err.shortMessage || err.message || err}`, "error");
+  } finally {
+    btn("bridge-approve-btn").disabled = false;
+  }
+});
+
+// Step 2: Quote Fee
+btn("bridge-quote-btn").addEventListener("click", async () => {
+  const a = getBridgeAmount();
+  if (!a) return;
+  btn("bridge-quote-btn").disabled = true;
+  try {
+    B("Switching to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const from = await signer.getAddress();
+    const recipientBytes32 = zeroPadValue(from, 32);
+
+    const sendParam = [EID.ETHEREUM, recipientBytes32, a.wei, a.min, "0x", "0x", "0x"];
+    console.log("[BRIDGE-QUOTE] signer:", from);
+    console.log("[BRIDGE-QUOTE] sendParam:", JSON.stringify(sendParam));
+
+    const adapter = new Contract(ADAPTER_HYPEREVM, ADAPTER_SEND_ABI, signer);
+    B("Quoting LayerZero fee…");
+    const [msgFee] = await adapter.quoteSend(sendParam, false);
+    quotedNativeFee = msgFee.nativeFee;
+    console.log("[BRIDGE-QUOTE] nativeFee (wei):", quotedNativeFee!.toString());
+    console.log("[BRIDGE-QUOTE] nativeFee (HYPE):", formatEther(quotedNativeFee!));
+    B(`Fee: ${formatEther(quotedNativeFee!)} HYPE ✓`, "success");
+  } catch (err: any) {
+    console.error("[BRIDGE-QUOTE] error:", err);
+    B(`Error: ${err.shortMessage || err.message || err}`, "error");
+  } finally {
+    btn("bridge-quote-btn").disabled = false;
+  }
+});
+
+// Step 3: Send
+btn("bridge-send-btn").addEventListener("click", async () => {
+  const a = getBridgeAmount();
+  if (!a) return;
+  if (quotedNativeFee == null) { B("Quote the fee first (step 2)", "error"); return; }
+  btn("bridge-send-btn").disabled = true;
+  try {
+    B("Switching to HyperEVM…");
+    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const from = await signer.getAddress();
+    const recipientBytes32 = zeroPadValue(from, 32);
+
+    const sendParam = [EID.ETHEREUM, recipientBytes32, a.wei, a.min, "0x", "0x", "0x"];
+    console.log("[BRIDGE-SEND] signer / recipient:", from);
+    console.log("[BRIDGE-SEND] amount (coins):", a.coins);
+    console.log("[BRIDGE-SEND] amount (wei):", a.wei.toString());
+    console.log("[BRIDGE-SEND] minAmount (wei):", a.min.toString());
+    console.log("[BRIDGE-SEND] sendParam:", JSON.stringify(sendParam));
+    console.log("[BRIDGE-SEND] nativeFee:", quotedNativeFee!.toString(), "=", formatEther(quotedNativeFee!), "HYPE");
+    console.log("[BRIDGE-SEND] refundAddress:", from);
+
+    const adapter = new Contract(ADAPTER_HYPEREVM, ADAPTER_SEND_ABI, signer);
+    B(`Sending ${a.coins} QONE → Ethereum…`);
+    const tx = await adapter.send(sendParam, [quotedNativeFee, 0n], from, { value: quotedNativeFee });
+    console.log("[BRIDGE-SEND] tx:", tx.hash);
+    B(`Tx: ${tx.hash}`);
+    await tx.wait();
+    B(`Bridged ${a.coins} QONE → Ethereum ✓  Track on layerzeroscan.com`, "success");
+  } catch (err: any) {
+    console.error("[BRIDGE-SEND] error:", err);
+    B(`Error: ${err.shortMessage || err.message || err}`, "error");
+  } finally {
+    btn("bridge-send-btn").disabled = false;
   }
 });

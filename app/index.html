@@ -97,6 +97,22 @@
 
         <div id="wire-log" class="log"></div>
       </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Test Bridge: HyperEVM &rarr; Ethereum</h2>
+        </div>
+        <p>Send QONE from HyperEVM to Ethereum (same address). Each step is a separate transaction.</p>
+        <div class="input-row">
+          <input id="bridge-amount" type="number" placeholder="Amount (QONE)" min="0" step="any" disabled />
+        </div>
+        <div class="btn-row">
+          <button id="bridge-approve-btn" disabled>1. Approve</button>
+          <button id="bridge-quote-btn" disabled>2. Quote Fee</button>
+          <button id="bridge-send-btn" disabled>3. Send</button>
+        </div>
+        <div id="bridge-log" class="log"></div>
+      </section>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
