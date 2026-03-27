@@ -148,7 +148,6 @@ forge verify-contract $ADAPTER_HYPEREVM_ADDRESS \
     src/QONEOFTAdapter.sol:QONEOFTAdapter \
     --rpc-url https://rpc.hyperliquid.xyz/evm \
     --verifier etherscan \
-    --verifier-url https://api.hyperevmscan.io/api \
     --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 

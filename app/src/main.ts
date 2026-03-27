@@ -1,6 +1,5 @@
-import { BrowserProvider, ContractFactory, Contract, zeroPadValue } from "ethers";
+import { BrowserProvider, Contract, zeroPadValue } from "ethers";
 import { setBlockSize } from "./hyperliquid";
-import adapterArtifact from "@artifacts/QONEOFTAdapter.sol/QONEOFTAdapter.json";
 import "./style.css";
 
 const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
@@ -10,7 +9,8 @@ const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 const QONE_ADDRESS = "0x20196F73529C7DC24B30f4703D7A2b79643aCdE0";
 const ENFORCED_OPTS_80K = "0x00030100110100000000000000000000000000013880";
 
-let adapterAddress = "";
+const ADAPTER_ADDRESS = "0x070DA2E023FD454fEC26Dcecb2b9B16668781a33";
+let adapterAddress = ADAPTER_ADDRESS;
 
 const $ = (id: string) => document.getElementById(id)!;
 const btn = (id: string) => $(id) as HTMLButtonElement;
@@ -65,9 +65,12 @@ $("connect-btn").addEventListener("click", async () => {
 
   $("wallet-info").textContent = address;
   $("wallet-info").classList.add("connected");
-  btn("deploy-adapter-btn").disabled = false;
   btn("big-blocks-on-btn").disabled = false;
   btn("big-blocks-off-btn").disabled = false;
+  btn("peer-adapter-btn").disabled = false;
+  btn("peer-qone-btn").disabled = false;
+  btn("opts-adapter-btn").disabled = false;
+  btn("opts-qone-btn").disabled = false;
 });
 
 // ── Big Blocks ───────────────────────────────────────────
@@ -100,54 +103,7 @@ btn("big-blocks-off-btn").addEventListener("click", async () => {
   }
 });
 
-// ── Step 3: Deploy QONEOFTAdapter on HyperEVM ────────────
-
-btn("deploy-adapter-btn").addEventListener("click", async () => {
-  btn("deploy-adapter-btn").disabled = true;
-  const L = (m: string, t?: "info" | "success" | "error") => log("adapter-log", m, t);
-
-  try {
-    L("Switching MetaMask to HyperEVM…");
-    await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
-    await window.ethereum!.request({ method: "eth_requestAccounts" });
-
-    // Verify we're on the right chain
-    const chainId = await window.ethereum!.request({ method: "eth_chainId" });
-    if (chainId !== HYPEREVM.hex) {
-      throw new Error(`Expected chain ${HYPEREVM.hex} but got ${chainId}. Please switch MetaMask to HyperEVM manually.`);
-    }
-    L("Connected to HyperEVM", "success");
-
-    L("Deploying QONEOFTAdapter…");
-    const provider = new BrowserProvider(window.ethereum!);
-    const signer = await provider.getSigner();
-    const factory = new ContractFactory(adapterArtifact.abi, adapterArtifact.bytecode.object, signer);
-    const contract = await factory.deploy({ gasLimit: 15_000_000 });
-    const txHash = contract.deploymentTransaction()?.hash;
-    if (txHash) L(`Tx: ${txHash}`);
-
-    L("Waiting for confirmation…");
-    await contract.waitForDeployment();
-    adapterAddress = await contract.getAddress();
-    L(`Deployed: ${adapterAddress}`, "success");
-
-    showWiring();
-    showSummary();
-  } catch (err: any) {
-    L(`Error: ${err.shortMessage || err.message || err}`, "error");
-    btn("deploy-adapter-btn").disabled = false;
-  }
-});
-
 // ── Step 4: Wire contracts ───────────────────────────────
-
-function showWiring() {
-  $("wiring-section").style.display = "block";
-  btn("peer-adapter-btn").disabled = false;
-  btn("peer-qone-btn").disabled = false;
-  btn("opts-adapter-btn").disabled = false;
-  btn("opts-qone-btn").disabled = false;
-}
 
 const W = (m: string, t?: "info" | "success" | "error") => log("wire-log", m, t);
 
@@ -241,13 +197,3 @@ btn("opts-qone-btn").addEventListener("click", async () => {
   }
 });
 
-// ── Summary ──────────────────────────────────────────────
-
-function showSummary() {
-  $("summary-section").style.display = "block";
-  let html = "";
-  html += `<div class="addr-row"><label>DummyAuthorizer (Ethereum)</label><code>0x332E3F52594F54E2c4fcFD43958eD5368bCb8024</code></div>`;
-  html += `<div class="addr-row"><label>QONE V2 (Ethereum)</label><code>${QONE_ADDRESS}</code></div>`;
-  html += `<div class="addr-row"><label>QONEOFTAdapter (HyperEVM)</label><code>${adapterAddress}</code></div>`;
-  $("summary-content").innerHTML = html;
-}

@@ -17,6 +17,16 @@
   --mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
+a {
+  color: #a5b4fc;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #c7d2fe;
+  text-decoration: underline;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
