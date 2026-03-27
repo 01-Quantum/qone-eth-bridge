@@ -265,6 +265,32 @@ button:disabled {
   flex: 1;
 }
 
+.input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-row input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.input-row input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.input-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .wire-group {
   margin-bottom: 1rem;
 }

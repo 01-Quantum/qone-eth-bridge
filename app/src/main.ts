@@ -1,6 +1,5 @@
-import { BrowserProvider, ContractFactory, Contract, zeroPadValue } from "ethers";
+import { BrowserProvider, Contract, zeroPadValue } from "ethers";
 import { setBlockSize } from "./hyperliquid";
-import ethAdapterArtifact from "@artifacts/QONEOFTAdapterEthereum.sol/QONEOFTAdapterEthereum.json";
 import "./style.css";
 
 const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
@@ -8,9 +7,8 @@ const ETHEREUM = { id: 1, hex: "0x1" };
 const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
 const ADAPTER_HYPEREVM = "0x070DA2E023FD454fEC26Dcecb2b9B16668781a33";
+const ADAPTER_ETHEREUM = "0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721";
 const ENFORCED_OPTS_80K = "0x00030100110100000000000000000000000000013880";
-
-let ethAdapterAddress = "";
 
 const $ = (id: string) => document.getElementById(id)!;
 const btn = (id: string) => $(id) as HTMLButtonElement;
@@ -52,6 +50,7 @@ const OApp_ABI = [
   "function setEnforcedOptions((uint32 eid, uint16 msgType, bytes options)[] _enforcedOptions) external",
 ];
 
+
 // ── Connect ──────────────────────────────────────────────
 
 $("connect-btn").addEventListener("click", async () => {
@@ -67,7 +66,10 @@ $("connect-btn").addEventListener("click", async () => {
   $("wallet-info").classList.add("connected");
   btn("big-blocks-on-btn").disabled = false;
   btn("big-blocks-off-btn").disabled = false;
-  btn("deploy-eth-adapter-btn").disabled = false;
+  btn("peer-adapter-btn").disabled = false;
+  btn("peer-eth-adapter-btn").disabled = false;
+  btn("opts-adapter-btn").disabled = false;
+  btn("opts-eth-adapter-btn").disabled = false;
 });
 
 // ── Big Blocks ───────────────────────────────────────────
@@ -100,52 +102,7 @@ btn("big-blocks-off-btn").addEventListener("click", async () => {
   }
 });
 
-// ── Step 4: Deploy QONEOFTAdapterEthereum ────────────────
-
-btn("deploy-eth-adapter-btn").addEventListener("click", async () => {
-  btn("deploy-eth-adapter-btn").disabled = true;
-  const L = (m: string, t?: "info" | "success" | "error") => log("eth-adapter-log", m, t);
-
-  try {
-    L("Switching MetaMask to Ethereum…");
-    await ensureChain(ETHEREUM.hex);
-    await window.ethereum!.request({ method: "eth_requestAccounts" });
-
-    const chainId = await window.ethereum!.request({ method: "eth_chainId" });
-    if (chainId !== ETHEREUM.hex) {
-      throw new Error(`Expected chain ${ETHEREUM.hex} but got ${chainId}. Please switch MetaMask to Ethereum manually.`);
-    }
-    L("Connected to Ethereum", "success");
-
-    L("Deploying QONEOFTAdapterEthereum…");
-    const provider = new BrowserProvider(window.ethereum!);
-    const signer = await provider.getSigner();
-    const factory = new ContractFactory(ethAdapterArtifact.abi, ethAdapterArtifact.bytecode.object, signer);
-    const contract = await factory.deploy();
-    const txHash = contract.deploymentTransaction()?.hash;
-    if (txHash) L(`Tx: ${txHash}`);
-
-    L("Waiting for confirmation…");
-    await contract.waitForDeployment();
-    ethAdapterAddress = await contract.getAddress();
-    L(`Deployed: ${ethAdapterAddress}`, "success");
-
-    showWiring();
-  } catch (err: any) {
-    L(`Error: ${err.shortMessage || err.message || err}`, "error");
-    btn("deploy-eth-adapter-btn").disabled = false;
-  }
-});
-
 // ── Step 5: Wire adapters ────────────────────────────────
-
-function showWiring() {
-  $("wiring-section").style.display = "block";
-  btn("peer-adapter-btn").disabled = false;
-  btn("peer-eth-adapter-btn").disabled = false;
-  btn("opts-adapter-btn").disabled = false;
-  btn("opts-eth-adapter-btn").disabled = false;
-}
 
 const W = (m: string, t?: "info" | "success" | "error") => log("wire-log", m, t);
 
@@ -159,7 +116,7 @@ btn("peer-adapter-btn").addEventListener("click", async () => {
     const signer = await provider.getSigner();
     const contract = new Contract(ADAPTER_HYPEREVM, OApp_ABI, signer);
 
-    const peerBytes32 = zeroPadValue(ethAdapterAddress, 32);
+    const peerBytes32 = zeroPadValue(ADAPTER_ETHEREUM, 32);
     W(`setPeer(${EID.ETHEREUM}, ${peerBytes32})…`);
     const tx = await contract.setPeer(EID.ETHEREUM, peerBytes32);
     W(`Tx: ${tx.hash}`);
@@ -179,7 +136,7 @@ btn("peer-eth-adapter-btn").addEventListener("click", async () => {
     await ensureChain(ETHEREUM.hex);
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(ethAdapterAddress, OApp_ABI, signer);
+    const contract = new Contract(ADAPTER_ETHEREUM, OApp_ABI, signer);
 
     const peerBytes32 = zeroPadValue(ADAPTER_HYPEREVM, 32);
     W(`setPeer(${EID.HYPEREVM}, ${peerBytes32})…`);
@@ -224,7 +181,7 @@ btn("opts-eth-adapter-btn").addEventListener("click", async () => {
     await ensureChain(ETHEREUM.hex);
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(ethAdapterAddress, OApp_ABI, signer);
+    const contract = new Contract(ADAPTER_ETHEREUM, OApp_ABI, signer);
 
     W("setEnforcedOptions on Ethereum adapter…");
     const tx = await contract.setEnforcedOptions([

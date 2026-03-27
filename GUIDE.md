@@ -34,7 +34,7 @@ Both adapters use the lock/unlock model. Liquidity must be seeded on both sides 
 | DummyAuthorizer | Ethereum | `0x332E3F52594F54E2c4fcFD43958eD5368bCb8024` | Deployed & Verified |
 | QONE V2 | Ethereum | `0x20196F73529C7DC24B30f4703D7A2b79643aCdE0` | Deployed & Verified |
 | QONEOFTAdapter | HyperEVM | `0x070DA2E023FD454fEC26Dcecb2b9B16668781a33` | Deployed |
-| QONEOFTAdapterEthereum | Ethereum | _deploy via web app_ | Pending |
+| QONEOFTAdapterEthereum | Ethereum | `0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721` | Deployed |
 
 ### Hardcoded Values
 
@@ -167,8 +167,6 @@ forge verify-contract 0x070DA2E023FD454fEC26Dcecb2b9B16668781a33 \
 ```bash
 forge verify-contract $ADAPTER_ETH_ADDRESS \
     src/QONEOFTAdapterEthereum.sol:QONEOFTAdapterEthereum \
-    --rpc-url https://cloudflare-eth.com \
-    --verifier etherscan \
     --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
@@ -176,10 +174,8 @@ forge verify-contract $ADAPTER_ETH_ADDRESS \
 
 ## Step 5: Seed Liquidity
 
-Both adapters use lock/unlock, so each side needs QONE tokens deposited before bridging can work in that direction.
-
 - **For Ethereum → HyperEVM:** Transfer QONE to the HyperEVM adapter (`0x070DA2E023FD454fEC26Dcecb2b9B16668781a33`)
-- **For HyperEVM → Ethereum:** Transfer QONE V2 to the Ethereum adapter (`$ADAPTER_ETH_ADDRESS`)
+- **For HyperEVM → Ethereum:** Transfer QONE V2 to the Ethereum adapter (`0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721`)
 
 Over time it's self-balancing: every bridge in one direction adds liquidity to the other side.
 
