@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-BKHtqWKb.js"></script>
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-By6bJV4r.js"></script>
     <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-Beybi4K5.css">
   </head>
   <body>
@@ -59,7 +59,7 @@
 
       <section class="card done">
         <div class="card-header">
-          <h2>Step 3 &mdash; QONEOFTAdapter</h2>
+          <h2>Step 3 &mdash; QONEOFTAdapter (HyperEVM)</h2>
           <span class="badge hyperevm">HyperEVM &check;</span>
         </div>
         <div class="addr-row">
@@ -68,22 +68,32 @@
         </div>
       </section>
 
-      <section id="wiring-section" class="card">
+      <section class="card">
         <div class="card-header">
-          <h2>Step 4 &mdash; Wire Contracts</h2>
+          <h2>Step 4 &mdash; QONEOFTAdapter (Ethereum)</h2>
+          <span class="badge ethereum">Ethereum</span>
         </div>
-        <p>Set peers and enforced options so the contracts can talk across chains. Each button sends one transaction via MetaMask.</p>
+        <p>Deploy an OFTAdapter on Ethereum to lock/unlock QONE V2 tokens for cross-chain bridging.</p>
+        <button id="deploy-eth-adapter-btn" disabled>Deploy on Ethereum</button>
+        <div id="eth-adapter-log" class="log"></div>
+      </section>
+
+      <section id="wiring-section" class="card" style="display: none">
+        <div class="card-header">
+          <h2>Step 5 &mdash; Wire Adapters</h2>
+        </div>
+        <p>Set peers and enforced options so the two adapters can talk across chains. Each button sends one transaction via MetaMask.</p>
 
         <div class="wire-group">
           <h3>Set Peers</h3>
-          <button id="peer-adapter-btn" disabled>setPeer on Adapter (HyperEVM)</button>
-          <button id="peer-qone-btn" disabled>setPeer on QONE V2 (Ethereum)</button>
+          <button id="peer-adapter-btn" disabled>setPeer on HyperEVM Adapter</button>
+          <button id="peer-eth-adapter-btn" disabled>setPeer on Ethereum Adapter</button>
         </div>
 
         <div class="wire-group">
           <h3>Set Enforced Options</h3>
-          <button id="opts-adapter-btn" disabled>setEnforcedOptions on Adapter (HyperEVM)</button>
-          <button id="opts-qone-btn" disabled>setEnforcedOptions on QONE V2 (Ethereum)</button>
+          <button id="opts-adapter-btn" disabled>setEnforcedOptions on HyperEVM Adapter</button>
+          <button id="opts-eth-adapter-btn" disabled>setEnforcedOptions on Ethereum Adapter</button>
         </div>
 
         <div id="wire-log" class="log"></div>
