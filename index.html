@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-wz66Ry4i.js"></script>
-    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-B2bSoPZd.css">
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-BI0Ei3xX.js"></script>
+    <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-3OPsJ2te.css">
   </head>
   <body>
     <div id="app">
@@ -46,10 +46,23 @@
 
       <section class="card">
         <div class="card-header">
+          <h2>Big Blocks</h2>
+          <span class="badge hyperevm">HyperEVM</span>
+        </div>
+        <p>Toggle big blocks on your HyperEVM account. Required before deploying large contracts. Enable blind signing on Ledger.</p>
+        <div class="btn-row">
+          <button id="big-blocks-on-btn" disabled>Enable Big Blocks</button>
+          <button id="big-blocks-off-btn" disabled>Disable Big Blocks</button>
+        </div>
+        <div id="bigblocks-log" class="log"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
           <h2>Step 3 &mdash; QONEOFTAdapter</h2>
           <span class="badge hyperevm">HyperEVM</span>
         </div>
-        <p>Locks/unlocks QONE for cross-chain bridging. Automatically toggles big blocks.</p>
+        <p>Locks/unlocks QONE for cross-chain bridging. Enable big blocks first.</p>
         <button id="deploy-adapter-btn" disabled>Deploy on HyperEVM</button>
         <div id="adapter-log" class="log"></div>
       </section>
