@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QONE Bridge Deployer</title>
-    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-By6bJV4r.js"></script>
+    <script type="module" crossorigin src="/qone-eth-bridge/assets/index-wgwCdXH0.js"></script>
     <link rel="stylesheet" crossorigin href="/qone-eth-bridge/assets/index-Beybi4K5.css">
   </head>
   <body>
@@ -68,17 +68,18 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card done">
         <div class="card-header">
           <h2>Step 4 &mdash; QONEOFTAdapter (Ethereum)</h2>
-          <span class="badge ethereum">Ethereum</span>
+          <span class="badge ethereum">Ethereum &check;</span>
         </div>
-        <p>Deploy an OFTAdapter on Ethereum to lock/unlock QONE V2 tokens for cross-chain bridging.</p>
-        <button id="deploy-eth-adapter-btn" disabled>Deploy on Ethereum</button>
-        <div id="eth-adapter-log" class="log"></div>
+        <div class="addr-row">
+          <label>Deployed</label>
+          <a href="https://etherscan.io/address/0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721" target="_blank" rel="noopener"><code>0x2A2bB67D6c9158539Aee373A03C262F0Fb2e3721</code></a>
+        </div>
       </section>
 
-      <section id="wiring-section" class="card" style="display: none">
+      <section id="wiring-section" class="card">
         <div class="card-header">
           <h2>Step 5 &mdash; Wire Adapters</h2>
         </div>
