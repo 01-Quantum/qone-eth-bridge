@@ -66,6 +66,38 @@ $("connect-btn").addEventListener("click", async () => {
   $("wallet-info").textContent = address;
   $("wallet-info").classList.add("connected");
   btn("deploy-adapter-btn").disabled = false;
+  btn("big-blocks-on-btn").disabled = false;
+  btn("big-blocks-off-btn").disabled = false;
+});
+
+// ── Big Blocks ───────────────────────────────────────────
+
+btn("big-blocks-on-btn").addEventListener("click", async () => {
+  btn("big-blocks-on-btn").disabled = true;
+  const L = (m: string, t?: "info" | "success" | "error") => log("bigblocks-log", m, t);
+  try {
+    L("Enabling big blocks…");
+    await setBlockSize(true);
+    L("Big blocks enabled", "success");
+  } catch (err: any) {
+    L(`Error: ${err.shortMessage || err.message || err}`, "error");
+  } finally {
+    btn("big-blocks-on-btn").disabled = false;
+  }
+});
+
+btn("big-blocks-off-btn").addEventListener("click", async () => {
+  btn("big-blocks-off-btn").disabled = true;
+  const L = (m: string, t?: "info" | "success" | "error") => log("bigblocks-log", m, t);
+  try {
+    L("Disabling big blocks…");
+    await setBlockSize(false);
+    L("Big blocks disabled", "success");
+  } catch (err: any) {
+    L(`Error: ${err.shortMessage || err.message || err}`, "error");
+  } finally {
+    btn("big-blocks-off-btn").disabled = false;
+  }
 });
 
 // ── Step 3: Deploy QONEOFTAdapter on HyperEVM ────────────
@@ -75,12 +107,6 @@ btn("deploy-adapter-btn").addEventListener("click", async () => {
   const L = (m: string, t?: "info" | "success" | "error") => log("adapter-log", m, t);
 
   try {
-    // Big blocks ON
-    L("Switching to big blocks…");
-    await setBlockSize(true);
-    L("Big blocks enabled", "success");
-
-    // Deploy
     L("Switching MetaMask to HyperEVM…");
     await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
     await window.ethereum!.request({ method: "eth_requestAccounts" });
@@ -105,22 +131,11 @@ btn("deploy-adapter-btn").addEventListener("click", async () => {
     adapterAddress = await contract.getAddress();
     L(`Deployed: ${adapterAddress}`, "success");
 
-    // Big blocks OFF
-    L("Switching back to small blocks…");
-    try {
-      await setBlockSize(false);
-      L("Small blocks restored", "success");
-    } catch {
-      L("Could not auto-restore small blocks — do it manually if needed", "error");
-    }
-
     showWiring();
     showSummary();
   } catch (err: any) {
     L(`Error: ${err.shortMessage || err.message || err}`, "error");
     btn("deploy-adapter-btn").disabled = false;
-    // Try to restore small blocks on failure
-    try { await setBlockSize(false); } catch {}
   }
 });
 

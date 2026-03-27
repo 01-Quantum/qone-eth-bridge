@@ -246,6 +246,15 @@ button:disabled {
   word-break: break-all;
 }
 
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-row button {
+  flex: 1;
+}
+
 .wire-group {
   margin-bottom: 1rem;
 }
