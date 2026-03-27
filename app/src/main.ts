@@ -1,16 +1,16 @@
-import { BrowserProvider, Contract, zeroPadValue } from "ethers";
+import { BrowserProvider, ContractFactory, Contract, zeroPadValue } from "ethers";
 import { setBlockSize } from "./hyperliquid";
+import ethAdapterArtifact from "@artifacts/QONEOFTAdapterEthereum.sol/QONEOFTAdapterEthereum.json";
 import "./style.css";
 
 const HYPEREVM = { id: 999, hex: "0x3e7", name: "HyperEVM", rpc: "https://rpc.hyperliquid.xyz/evm" };
 const ETHEREUM = { id: 1, hex: "0x1" };
 const EID = { HYPEREVM: 30367, ETHEREUM: 30101 };
 
-const QONE_ADDRESS = "0x20196F73529C7DC24B30f4703D7A2b79643aCdE0";
+const ADAPTER_HYPEREVM = "0x070DA2E023FD454fEC26Dcecb2b9B16668781a33";
 const ENFORCED_OPTS_80K = "0x00030100110100000000000000000000000000013880";
 
-const ADAPTER_ADDRESS = "0x070DA2E023FD454fEC26Dcecb2b9B16668781a33";
-let adapterAddress = ADAPTER_ADDRESS;
+let ethAdapterAddress = "";
 
 const $ = (id: string) => document.getElementById(id)!;
 const btn = (id: string) => $(id) as HTMLButtonElement;
@@ -67,10 +67,7 @@ $("connect-btn").addEventListener("click", async () => {
   $("wallet-info").classList.add("connected");
   btn("big-blocks-on-btn").disabled = false;
   btn("big-blocks-off-btn").disabled = false;
-  btn("peer-adapter-btn").disabled = false;
-  btn("peer-qone-btn").disabled = false;
-  btn("opts-adapter-btn").disabled = false;
-  btn("opts-qone-btn").disabled = false;
+  btn("deploy-eth-adapter-btn").disabled = false;
 });
 
 // ── Big Blocks ───────────────────────────────────────────
@@ -103,11 +100,56 @@ btn("big-blocks-off-btn").addEventListener("click", async () => {
   }
 });
 
-// ── Step 4: Wire contracts ───────────────────────────────
+// ── Step 4: Deploy QONEOFTAdapterEthereum ────────────────
+
+btn("deploy-eth-adapter-btn").addEventListener("click", async () => {
+  btn("deploy-eth-adapter-btn").disabled = true;
+  const L = (m: string, t?: "info" | "success" | "error") => log("eth-adapter-log", m, t);
+
+  try {
+    L("Switching MetaMask to Ethereum…");
+    await ensureChain(ETHEREUM.hex);
+    await window.ethereum!.request({ method: "eth_requestAccounts" });
+
+    const chainId = await window.ethereum!.request({ method: "eth_chainId" });
+    if (chainId !== ETHEREUM.hex) {
+      throw new Error(`Expected chain ${ETHEREUM.hex} but got ${chainId}. Please switch MetaMask to Ethereum manually.`);
+    }
+    L("Connected to Ethereum", "success");
+
+    L("Deploying QONEOFTAdapterEthereum…");
+    const provider = new BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const factory = new ContractFactory(ethAdapterArtifact.abi, ethAdapterArtifact.bytecode.object, signer);
+    const contract = await factory.deploy();
+    const txHash = contract.deploymentTransaction()?.hash;
+    if (txHash) L(`Tx: ${txHash}`);
+
+    L("Waiting for confirmation…");
+    await contract.waitForDeployment();
+    ethAdapterAddress = await contract.getAddress();
+    L(`Deployed: ${ethAdapterAddress}`, "success");
+
+    showWiring();
+  } catch (err: any) {
+    L(`Error: ${err.shortMessage || err.message || err}`, "error");
+    btn("deploy-eth-adapter-btn").disabled = false;
+  }
+});
+
+// ── Step 5: Wire adapters ────────────────────────────────
+
+function showWiring() {
+  $("wiring-section").style.display = "block";
+  btn("peer-adapter-btn").disabled = false;
+  btn("peer-eth-adapter-btn").disabled = false;
+  btn("opts-adapter-btn").disabled = false;
+  btn("opts-eth-adapter-btn").disabled = false;
+}
 
 const W = (m: string, t?: "info" | "success" | "error") => log("wire-log", m, t);
 
-// setPeer on Adapter (HyperEVM → points to QONE V2 on Ethereum)
+// setPeer on HyperEVM Adapter → points to Ethereum Adapter
 btn("peer-adapter-btn").addEventListener("click", async () => {
   btn("peer-adapter-btn").disabled = true;
   try {
@@ -115,43 +157,43 @@ btn("peer-adapter-btn").addEventListener("click", async () => {
     await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(adapterAddress, OApp_ABI, signer);
+    const contract = new Contract(ADAPTER_HYPEREVM, OApp_ABI, signer);
 
-    const peerBytes32 = zeroPadValue(QONE_ADDRESS, 32);
+    const peerBytes32 = zeroPadValue(ethAdapterAddress, 32);
     W(`setPeer(${EID.ETHEREUM}, ${peerBytes32})…`);
     const tx = await contract.setPeer(EID.ETHEREUM, peerBytes32);
     W(`Tx: ${tx.hash}`);
     await tx.wait();
-    W("Adapter peer set", "success");
+    W("HyperEVM adapter peer set → Ethereum adapter", "success");
   } catch (err: any) {
     W(`Error: ${err.shortMessage || err.message || err}`, "error");
     btn("peer-adapter-btn").disabled = false;
   }
 });
 
-// setPeer on QONE V2 (Ethereum → points to Adapter on HyperEVM)
-btn("peer-qone-btn").addEventListener("click", async () => {
-  btn("peer-qone-btn").disabled = true;
+// setPeer on Ethereum Adapter → points to HyperEVM Adapter
+btn("peer-eth-adapter-btn").addEventListener("click", async () => {
+  btn("peer-eth-adapter-btn").disabled = true;
   try {
     W("Switching to Ethereum…");
     await ensureChain(ETHEREUM.hex);
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(QONE_ADDRESS, OApp_ABI, signer);
+    const contract = new Contract(ethAdapterAddress, OApp_ABI, signer);
 
-    const peerBytes32 = zeroPadValue(adapterAddress, 32);
+    const peerBytes32 = zeroPadValue(ADAPTER_HYPEREVM, 32);
     W(`setPeer(${EID.HYPEREVM}, ${peerBytes32})…`);
     const tx = await contract.setPeer(EID.HYPEREVM, peerBytes32);
     W(`Tx: ${tx.hash}`);
     await tx.wait();
-    W("QONE V2 peer set", "success");
+    W("Ethereum adapter peer set → HyperEVM adapter", "success");
   } catch (err: any) {
     W(`Error: ${err.shortMessage || err.message || err}`, "error");
-    btn("peer-qone-btn").disabled = false;
+    btn("peer-eth-adapter-btn").disabled = false;
   }
 });
 
-// setEnforcedOptions on Adapter (HyperEVM, for messages → Ethereum)
+// setEnforcedOptions on HyperEVM Adapter (messages → Ethereum)
 btn("opts-adapter-btn").addEventListener("click", async () => {
   btn("opts-adapter-btn").disabled = true;
   try {
@@ -159,41 +201,40 @@ btn("opts-adapter-btn").addEventListener("click", async () => {
     await ensureChain(HYPEREVM.hex, { name: HYPEREVM.name, rpc: HYPEREVM.rpc });
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(adapterAddress, OApp_ABI, signer);
+    const contract = new Contract(ADAPTER_HYPEREVM, OApp_ABI, signer);
 
-    W("setEnforcedOptions on adapter…");
+    W("setEnforcedOptions on HyperEVM adapter…");
     const tx = await contract.setEnforcedOptions([
       [EID.ETHEREUM, 1, ENFORCED_OPTS_80K],
     ]);
     W(`Tx: ${tx.hash}`);
     await tx.wait();
-    W("Adapter enforced options set", "success");
+    W("HyperEVM adapter enforced options set", "success");
   } catch (err: any) {
     W(`Error: ${err.shortMessage || err.message || err}`, "error");
     btn("opts-adapter-btn").disabled = false;
   }
 });
 
-// setEnforcedOptions on QONE V2 (Ethereum, for messages → HyperEVM)
-btn("opts-qone-btn").addEventListener("click", async () => {
-  btn("opts-qone-btn").disabled = true;
+// setEnforcedOptions on Ethereum Adapter (messages → HyperEVM)
+btn("opts-eth-adapter-btn").addEventListener("click", async () => {
+  btn("opts-eth-adapter-btn").disabled = true;
   try {
     W("Switching to Ethereum…");
     await ensureChain(ETHEREUM.hex);
     const provider = new BrowserProvider(window.ethereum!);
     const signer = await provider.getSigner();
-    const contract = new Contract(QONE_ADDRESS, OApp_ABI, signer);
+    const contract = new Contract(ethAdapterAddress, OApp_ABI, signer);
 
-    W("setEnforcedOptions on QONE V2…");
+    W("setEnforcedOptions on Ethereum adapter…");
     const tx = await contract.setEnforcedOptions([
       [EID.HYPEREVM, 1, ENFORCED_OPTS_80K],
     ]);
     W(`Tx: ${tx.hash}`);
     await tx.wait();
-    W("QONE V2 enforced options set", "success");
+    W("Ethereum adapter enforced options set", "success");
   } catch (err: any) {
     W(`Error: ${err.shortMessage || err.message || err}`, "error");
-    btn("opts-qone-btn").disabled = false;
+    btn("opts-eth-adapter-btn").disabled = false;
   }
 });
-
